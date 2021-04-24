@@ -30,8 +30,8 @@ PLATFORM = HOST
 #common variables for all platforms
 BASENAME 		:= c1m2
 TARGET 			:= $(BASENAME).out
-COMMONCFLAGS 	= -Wall -Werror -g -std=c99	#additional flags if needed -Wextra -Wconversion -pedantic
-COMMONLDFLAGS 	= -Wl,-O0,-Map=$(BASENAME).map
+COMMONCFLAGS 	= -Wall -O0 -Werror -g -std=c99
+COMMONLDFLAGS 	= -Wl,-Map=$(BASENAME).map
 CPPFLAGS 		= -D$(PLATFORM) $(INCLUDES) 
 
 
@@ -52,7 +52,7 @@ ifeq ($(PLATFORM), MSP432)
 
 	# Linker Flags and Defines
 	LD 			= arm-none-eabi-ld
-	LDFLAGS 	= $(COMMONLDFLAGS) $(LINKER_PATH) -T $(LINKER_FILE)
+	LDFLAGS 	= $(COMMONLDFLAGS) $(LINKER_PATH) -T $(LINKER_FILE) -nostdlib
 
 	#GNU Bin Utils Flags and Defines
 	OBJDUMP 	= arm-none-eabi-objdump
@@ -93,8 +93,8 @@ DEPDIR := .deps
 
 # -MMD
 # Generate dependency information as a side-effect of compilation, not instead of compilation.
-# This version omits system headers from the generated dependencies
-# if you prefer to preserve system headers as prerequisites, use -MD.
+# This version omits system headers from the generated dependencies.
+# If you prefer to preserve system headers as prerequisites, use -MD.
 
 # -MP
 # Adds a target for each prerequisite in the list, to avoid errors when deleting files.
@@ -102,11 +102,12 @@ DEPDIR := .deps
 # -MF $(DEPDIR)/$*.d
 # Write the generated dependency file $(DEPDIR)/$*.d.
 
-DEPFLAGS = -M -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
+DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 
 # Delete the built-in rules for building object files from .c files, so that, this rule is used instead.
-%.o: %.c $(DEPDIR)/%.d | $(DEPDIR)
-	$(CC) $(CPPFLAGS) $(DEPFLAGS) -c $(CFLAGS) $< -o $@
+#%.o : %.c
+%.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
+	$(CC) $(DEPFLAGS) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 # Declare a rule for creating the dependency directory if it doesn’t exist.
 $(DEPDIR): ; @mkdir -p $@
@@ -141,16 +142,19 @@ include $(wildcard $(DEPFILES))
 build: $(TARGET)
 
 $(TARGET):$(OBJS)
-	#Generate into c1m2.out
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $@
-	#Output size summary
-	$(SIZE) $(TARGET)
+	$(CC) $(LDFLAGS) $^ -o $@
+#$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $@
+#$(SIZE) $(TARGET)
 
 
 # Compile all objects but do NOT link them.
 .PHONY: compile-all
 compile-all: $(SOURCES)
 	$(CC) $(CPPFLAGS) -c $(CFLAGS) $^
+
+.PHONY: build-all
+build-all: $(SOURCES)
+
 
 
 # Remove all compiled objects, preprocessed outputs, assembly outputs executable files and build output files. 

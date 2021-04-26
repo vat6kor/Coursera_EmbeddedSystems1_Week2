@@ -107,8 +107,8 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 #%.o : %.c
 %.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
 	$(CC) $(DEPFLAGS) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-	$(OBJDUMP) -d $@ > $*_objdump.txt
-	$(NM) $@ > $*_nm.txt
+#$(OBJDUMP) -d $@ > $*_objdump.txt
+#$(SIZE) $@ > $*_size.txt
 
 # Declare a rule for creating the dependency directory if it doesn’t exist.
 $(DEPDIR): ; @mkdir -p $@
@@ -145,8 +145,9 @@ build: $(TARGET)
 
 $(TARGET):$(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
-	$(OBJDUMP) -d $@ > $(BASENAME)_objdump.txt
-	$(NM) $@ > $(BASENAME)_nm.txt
+	$(OBJDUMP) -d $@ > $*_objdump.txt
+	$(NM) -A $^ $@ > $*_nm.txt
+	$(SIZE) $^ $@ > $(BASENAME)_size.txt
 
 .PHONY: build-all
 build-all: $(PRES) $(ASMS) $(OBJS) $(TARGET)
@@ -154,5 +155,5 @@ build-all: $(PRES) $(ASMS) $(OBJS) $(TARGET)
 # Remove all compiled objects, preprocessed outputs, assembly outputs executable files and build output files.
 .PHONY: clean
 clean:
-	rm -f $(TARGET) $(BASENAME).map *.o *.asm *.i *.txt
+	rm -f $(TARGET) *.map *.o *.asm *.i *.txt
 	rm -r $(DEPDIR)

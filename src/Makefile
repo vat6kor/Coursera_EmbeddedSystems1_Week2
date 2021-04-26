@@ -2,10 +2,10 @@
 # Copyright (C) 2017 by Alex Fosdick - University of Colorado
 #
 # Redistribution, modification or use of this software in source or binary
-# forms is permitted as long as the files maintain this copyright. Users are 
+# forms is permitted as long as the files maintain this copyright. Users are
 # permitted to modify this and use it to learn about the field of embedded
 # software. Alex Fosdick and the University of Colorado are not liable for any
-# misuse of this material. 
+# misuse of this material.
 #
 #*****************************************************************************
 
@@ -23,58 +23,57 @@
 #------------------------------------------------------------------------------
 include sources.mk
 
-
 # Platform Overrides
 PLATFORM = HOST
 
 #common variables for all platforms
-BASENAME 		:= c1m2
-TARGET 			:= $(BASENAME).out
+BASENAME 			:= c1m2
+TARGET 				:= $(BASENAME).out
 COMMONCFLAGS 	= -Wall -O0 -Werror -g -std=c99
-COMMONLDFLAGS 	= -Wl,-Map=$(BASENAME).map
-CPPFLAGS 		= -D$(PLATFORM) $(INCLUDES) 
-
+COMMONLDFLAGS = -Wl,-Map=$(BASENAME).map
+CPPFLAGS 			= -D$(PLATFORM) $(INCLUDES)
 
 ifeq ($(PLATFORM), MSP432)
 
 	# Architectures Specific Flags
 	LINKER_PATH	= -L ../
 	LINKER_FILE = msp432p401r.lds
-	CPU 		= cortex-m4 
-	ARCH 		= armv7e-m
-	SPECS 		= nosys.specs
+	CPU 				= cortex-m4
+	ARCH 				= armv7e-m
+	SPECS 			= nosys.specs
 	ADDITIONAL 	= -mthumb -mfloat-abi=hard -mfpu=fpv4-sp-d16
-	
 
 	# C compiler Flags and Defines
-	CC 			= arm-none-eabi-gcc
+	CC 				= arm-none-eabi-gcc
 	CFLAGS 		= $(COMMONCFLAGS) -mcpu=$(CPU) -march=$(ARCH) --specs=$(SPECS) $(ADDITIONAL)
 
 	# Linker Flags and Defines
-	LD 			= arm-none-eabi-ld
+	LD 				= arm-none-eabi-ld
 	LDFLAGS 	= $(COMMONLDFLAGS) $(LINKER_PATH) -T $(LINKER_FILE) -nostdlib
 
 	#GNU Bin Utils Flags and Defines
-	OBJDUMP 	= arm-none-eabi-objdump
+	OBJDUMP = arm-none-eabi-objdump
 	SIZE 		= arm-none-eabi-size
+	NM 			= arm-none-eabi-nm
 else
 
 	# C compiler Flags and Defines
 	CC 			= gcc
-	CFLAGS 		= $(COMMONCFLAGS)
+	CFLAGS 	= $(COMMONCFLAGS)
 
 	# Linker Flags and Defines
 	LD 			= ld
-	LDFLAGS		= $(COMMONLDFLAGS)
+	LDFLAGS	= $(COMMONLDFLAGS)
 
 	#GNU Bin Utils Flags and Defines
-	OBJDUMP 	= objdump
+	OBJDUMP = objdump
 	SIZE 		= size
+	NM			= nm
 endif
 
-OBJS = $(SOURCES:.c=.o)
-ASMS = $(SOURCES:.c=.asm)
-PRES = $(SOURCES:.c=.i)
+OBJS := $(SOURCES:.c=.o)
+ASMS := $(SOURCES:.c=.asm)
+PRES := $(SOURCES:.c=.i)
 
 ##############################################################################################################
 #Generates the object files of all c-program implementation files and its dependecies.
@@ -108,6 +107,8 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 #%.o : %.c
 %.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
 	$(CC) $(DEPFLAGS) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(OBJDUMP) -d $@ > $*_objdump.txt
+	$(NM) $@ > $*_nm.txt
 
 # Declare a rule for creating the dependency directory if it doesn’t exist.
 $(DEPDIR): ; @mkdir -p $@
@@ -121,44 +122,37 @@ $(DEPFILES):
 include $(wildcard $(DEPFILES))
 ############################################################################################################
 
-# Generates the preprocessed output of all c-program implementation files. 
+# Generates the preprocessed output of all c-program implementation files.
 %.i: %.c
 	$(CC) $(CPPFLAGS) -E $(CFLAGS) -o $@ $^
 
-
 # Create assembly file of a C source.
-%.asm: %.c $(TARGET)
+%.asm: %.c
 	$(CC) $(CPPFLAGS) -S $(CFLAGS) -o $@ $<
-	$(OBJDUMP) -d $(TARGET)
-
-
-#################################################################################
-# Complete build:	*.d      - Dependency Files for each source file
-#					*.o      - Individual object files
-#					c1m2.map - Map file for the full build
-#					c1m2.out - Output Executable file
-
-.PHONY: build
-build: $(TARGET)
-
-$(TARGET):$(OBJS)
-	$(CC) $(LDFLAGS) $^ -o $@
-#$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) $(SOURCES) -o $@
-#$(SIZE) $(TARGET)
-
 
 # Compile all objects but do NOT link them.
 .PHONY: compile-all
 compile-all: $(SOURCES)
 	$(CC) $(CPPFLAGS) -c $(CFLAGS) $^
 
+#################################################################################
+# Complete build:	*.d      - Dependency Files for each source file
+#					*.o      - Individual object files
+#					c1m2.map - Map file for the full build
+#					c1m2.out - Output Executable file
+.PHONY: build
+build: $(TARGET)
+
+$(TARGET):$(OBJS)
+	$(CC) $(LDFLAGS) $^ -o $@
+	$(OBJDUMP) -d $@ > $(BASENAME)_objdump.txt
+	$(NM) $@ > $(BASENAME)_nm.txt
+
 .PHONY: build-all
-build-all: $(SOURCES)
+build-all: $(PRES) $(ASMS) $(OBJS) $(TARGET)
 
-
-
-# Remove all compiled objects, preprocessed outputs, assembly outputs executable files and build output files. 
+# Remove all compiled objects, preprocessed outputs, assembly outputs executable files and build output files.
 .PHONY: clean
 clean:
-	rm -f $(TARGET) $(BASENAME).map *.o *.asm *.i
+	rm -f $(TARGET) $(BASENAME).map *.o *.asm *.i *.txt
 	rm -r $(DEPDIR)

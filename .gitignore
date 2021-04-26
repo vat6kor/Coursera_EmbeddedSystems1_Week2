@@ -1,6 +1,13 @@
 # Prerequisites
 *.d
 
+# PreProcessor outputs
+*.i
+
+# assembly files
+*.s
+*.asm
+
 # Object files
 *.o
 *.ko
@@ -50,3 +57,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# others
+*.txt

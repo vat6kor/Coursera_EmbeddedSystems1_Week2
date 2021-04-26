@@ -107,8 +107,6 @@ DEPFLAGS = -MT $@ -MMD -MP -MF $(DEPDIR)/$*.d
 #%.o : %.c
 %.o : %.c $(DEPDIR)/%.d | $(DEPDIR)
 	$(CC) $(DEPFLAGS) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
-#$(OBJDUMP) -d $@ > $*_objdump.txt
-#$(SIZE) $@ > $*_size.txt
 
 # Declare a rule for creating the dependency directory if it doesn’t exist.
 $(DEPDIR): ; @mkdir -p $@
@@ -137,9 +135,9 @@ compile-all: $(SOURCES)
 
 #################################################################################
 # Complete build:	*.d      - Dependency Files for each source file
-#					*.o      - Individual object files
-#					c1m2.map - Map file for the full build
-#					c1m2.out - Output Executable file
+#									*.o      - Individual object files
+#									c1m2.map - Map file for the full build
+#									c1m2.out - Output Executable file
 .PHONY: build
 build: $(TARGET)
 
@@ -147,7 +145,7 @@ $(TARGET):$(OBJS)
 	$(CC) $(LDFLAGS) $^ -o $@
 	$(OBJDUMP) -d $@ > $*_objdump.txt
 	$(NM) -A $^ $@ > $*_nm.txt
-	$(SIZE) $^ $@ > $(BASENAME)_size.txt
+	$(SIZE) $^ $@ > $*_size.txt
 
 .PHONY: build-all
 build-all: $(PRES) $(ASMS) $(OBJS) $(TARGET)
